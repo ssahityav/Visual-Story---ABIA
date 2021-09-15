@@ -1,0 +1,247 @@
+---
+title: "Visual Story - ABIA Dataset"
+author: "Sahitya Sundar Raj Vijayanagar"
+date: "15/08/2021"
+output: pdf_document
+---
+
+``` {r setup,include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+
+require(ggmap)
+require(tidyr)
+require(dplyr)
+require(ggplot2)
+require(maps)
+require(stringr)
+
+## Load the dataset
+airport = read.csv('ABIA.csv')
+
+## Load the airport lat-long data
+airport_codes <- read.csv("airport-codes.csv", header = TRUE)
+
+
+```
+
+``` {r a}
+cat('Number of flights flown in 2008:',dim(airport)[1])
+
+month <- airport$Month
+
+month[month == 1] <- "January"
+month[month == 2] <- "February"
+month[month == 3] <- "March"
+month[month == 4] <- "April"
+month[month == 5] <- "May"
+month[month == 6] <- "June"
+month[month == 7] <- "July"
+month[month == 8] <- "August"
+month[month == 9] <- "September"
+month[month == 10] <- "October"
+month[month == 11] <- "November"
+month[month == 12] <- "December"
+
+monthf = factor(month,
+             levels = c("January", 
+                          "February", 
+                          "March", 
+                          "April", 
+                          "May",
+                          "June",
+                          "July",
+                          "August",
+                          "September",
+                          "October",
+                          "November",
+                          "December"),
+             ordered=TRUE)
+
+
+## Plot the flights flown by Month number
+barplot(table(monthf),
+main="Flights flown in 2008 by Month",
+xlab="Month",
+col="darkmagenta",
+las=2)
+```
+
+``` {r b}
+## Plot the flights flown by Day of Week
+
+Day <- airport$DayOfWeek
+
+Day[Day == 1] <- "Monday"
+Day[Day == 2] <- "Tuesday"
+Day[Day == 3] <- "Wednesday"
+Day[Day == 4] <- "Thursday"
+Day[Day == 5] <- "Friday"
+Day[Day == 6] <- "Saturday"
+Day[Day == 7] <- "Sunday"
+
+
+Dayf = factor(Day,
+             levels = c("Monday", 
+                        "Tuesday", 
+                        "Wednesday", 
+                        "Thursday", 
+                        "Friday",
+                        "Saturday",
+                        "Sunday"),
+             ordered=TRUE)
+
+
+## Plot the flights flown by Day of Week
+barplot(table(Dayf),
+main="Flights flown in 2008 by Day of Week",
+xlab="Day of Week",
+col="darkmagenta",
+las=2)
+```
+
+``` {r c}
+## Plot the flights flown by Day of Month 
+
+barplot(table(airport$DayofMonth),
+main="Flights flown in 2008 by Day of Month",
+xlab="Day of Month",
+col="darkmagenta")
+
+
+```
+``` {r d}
+## Plot the flights flown by Carrier
+
+barplot(sort(table(airport$UniqueCarrier),decreasing=TRUE),
+main="Flights flown in 2008 by Unique Carrier",
+xlab="Carrier Code",
+col="darkmagenta",
+las=2)
+
+
+```
+
+
+``` {r e}
+Origin_AUS = airport[airport$Origin=='AUS',]
+#dim(Origin_AUS)
+
+Dest_AUS = airport[airport$Dest=='AUS',]
+#dim(Dest_AUS)
+
+
+## Plot the flights flown by Carrier
+Origin_AUS_sort <- sort(table(Origin_AUS$Dest),decreasing=TRUE)
+#Origin_AUS_sort[1:20]
+
+barplot(Origin_AUS_sort[1:20],
+main="Flights flown from Austin in 2008 by Top 20 Destinations",
+xlab="Destination Airport Code",
+col="darkmagenta",
+las=2)
+
+
+```
+
+``` {r f}
+Origin_AUS = airport[airport$Origin=='AUS',]
+dim(Origin_AUS)
+
+Dest_AUS = airport[airport$Dest=='AUS',]
+dim(Dest_AUS)
+
+
+## Plot the flights flown by Carrier
+Dest_AUS_sort <- sort(table(Dest_AUS$Origin),decreasing=TRUE)
+Dest_AUS_sort[1:20]
+
+barplot(Dest_AUS_sort[1:20],
+main="Flights flown to Austin in 2008 by Top 20 Origins",
+xlab="Origin Airport Code",
+col="darkmagenta",
+las=2)
+
+
+```
+
+
+``` {r g}
+Origin_AUS = airport[airport$Origin=='AUS',]
+dim(Origin_AUS)
+
+Dest_AUS = airport[airport$Dest=='AUS',]
+dim(Dest_AUS)
+
+
+## Plot the flights flown by Carrier
+Dest_AUS_sort <- sort(table(Dest_AUS$Origin),decreasing=TRUE)
+Dest_AUS_sort[1:20]
+
+Dest_AUS_clean <- Dest_AUS %>% drop_na(ArrDelay)
+
+barplot(sort(tapply(Dest_AUS_clean$ArrDelay, Dest_AUS_clean$Origin, mean),decreasing=TRUE)[1:20],
+main="Average Arrival Delays to Austin from different Destinations",
+xlab="Origin Airport Code",
+col="darkmagenta",
+las=2)
+
+```
+``` {r h}
+
+names(airport_codes)
+for (i in 1:nrow(airport)) {
+  airport$OriginCoords[i] = airport_codes$coordinates[which(airport_codes$iata_code == airport$Origin[i])]
+  airport$DestCoords[i] = airport_codes$coordinates[which(airport_codes$iata_code == airport$Dest[i])]
+}
+
+lat = NULL
+lon = NULL
+
+for (i in 1:nrow(airport)) {
+  lat[i] = as.numeric(str_split(airport$OriginCoords[i], ", ", n = 2)[[1]][1])
+  lon[i] = as.numeric(str_split(airport$OriginCoords[i], ", ", n = 2)[[1]][2])
+}
+airport$OriginLat = lat
+airport$OriginLon = lon
+
+lat = NULL
+lon = NULL
+
+for (i in 1:nrow(airport)) {
+  lat[i] = as.numeric(str_split(airport$DestCoords[i], ", ", n = 2)[[1]][1])
+  lon[i] = as.numeric(str_split(airport$DestCoords[i], ", ", n = 2)[[1]][2])
+}
+airport$DestLat = lat
+airport$DestLon = lon
+
+Origin_AUS_sort = as.data.frame(Origin_AUS_sort)
+colnames(Origin_AUS_sort) <- c("Destination", "Flight Count")
+
+for (i in 1:nrow(Origin_AUS_sort)) {
+  Origin_AUS_sort$DestCoords[i] = airport_codes$coordinates[which(airport_codes$iata_code == Origin_AUS_sort$Destination[i])]
+}
+
+lat = NULL
+lon = NULL
+
+for (i in 1:nrow(Origin_AUS_sort)) {
+  lat[i] = as.numeric(str_split(Origin_AUS_sort$DestCoords[i], ", ", n = 2)[[1]][1])
+  lon[i] = as.numeric(str_split(Origin_AUS_sort$DestCoords[i], ", ", n = 2)[[1]][2])
+}
+Origin_AUS_sort$DestLat = lat
+Origin_AUS_sort$DestLon = lon
+colnames(Origin_AUS_sort) <- c("Destination", "Flight_Count", "DestCoords", "DestLat",   "DestLon")
+
+
+airportlatlon <- subset(airport, select = c(Origin, OriginLat, OriginLon))
+abialatlon <- filter(airportlatlon, Origin=="AUS") #separate df for abia
+abialatlon <- abialatlon[1,1:3]
+
+
+usa <- map_data("state")
+ggplot() + geom_polygon(data = usa, aes(x=long, y = lat, group = group), size=0.1, colour='white',  fill="#285663") + coord_fixed(1.3) + 
+  geom_curve(data=Origin_AUS_sort[1:10,], aes(x = DestLon, y = DestLat, xend = abialatlon$OriginLon, yend = abialatlon$OriginLat,col = Flight_Count,color=Flight_Count), size = .2, curvature = 0) + 
+  geom_point(data=Origin_AUS_sort[1:10,], aes(x = DestLon, y = DestLat), col = "lightgreen", shape = "x")+  scale_color_gradient(low = "#FFBF00", high = "#CC5500") + ggtitle("Flight Count by Top 10 Destinations with Origin - Austin") + theme(plot.title = element_text(hjust=0.5))
+```
